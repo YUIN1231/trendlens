@@ -2,7 +2,7 @@
 import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import type { SearchResult, TrendBusiness } from '@/lib/types'
+import type { SearchResult, TrendBusiness, CategoryScores } from '@/lib/types'
 import { useTranslation, LANG_OPTIONS } from '@/lib/i18n'
 
 function mapsUrl(b: TrendBusiness) {
@@ -13,69 +13,142 @@ function mapsUrl(b: TrendBusiness) {
 function reviewUrl(b: TrendBusiness) {
   return `https://search.google.com/local/writereview?query=${encodeURIComponent(b.name + ' ' + b.address)}`
 }
-function deltaLabel(b: TrendBusiness) {
-  if (b.status === 'new') return 'NEW'
-  if (b.trendDelta === 0) return '—'
-  return b.trendDelta > 0 ? `↑ +${b.trendDelta.toFixed(2)}` : `↓ ${b.trendDelta.toFixed(2)}`
+
+function useSaved() {
+  const [saved, setSaved] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const raw = localStorage.getItem('tl-saved')
+      return new Set(raw ? JSON.parse(raw) as string[] : [])
+    } catch { return new Set() }
+  })
+
+  const toggle = useCallback((name: string, biz: TrendBusiness) => {
+    setSaved(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) {
+        next.delete(name)
+        try {
+          const all = JSON.parse(localStorage.getItem('tl-saved-data') ?? '{}') as Record<string, unknown>
+          delete all[name]
+          localStorage.setItem('tl-saved-data', JSON.stringify(all))
+        } catch { /* ignore */ }
+      } else {
+        next.add(name)
+        try {
+          const all = JSON.parse(localStorage.getItem('tl-saved-data') ?? '{}') as Record<string, TrendBusiness>
+          all[name] = biz
+          localStorage.setItem('tl-saved-data', JSON.stringify(all))
+        } catch { /* ignore */ }
+      }
+      localStorage.setItem('tl-saved', JSON.stringify([...next]))
+      return next
+    })
+  }, [])
+
+  return { saved, toggle }
 }
 
-function BizRow({ b, rank, t }: { b: TrendBusiness; rank: number; t: (k: string) => string }) {
+function ScoreBadge({ score, status }: { score: number; status: TrendBusiness['status'] }) {
+  return (
+    <div className={`score-badge ${status}`} title="TrendLens Score">{score}</div>
+  )
+}
+
+function CategoryBars({ cats }: { cats: CategoryScores }) {
+  const entries: [string, number][] = [
+    ['Food', cats.food], ['Service', cats.service],
+    ['Atmos.', cats.atmosphere], ['Price', cats.price], ['Clean.', cats.cleanliness],
+  ]
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      {entries.map(([name, val]) => val > 0 && (
+        <div key={name} className="cat-row">
+          <span className="cat-name">{name}</span>
+          <div className="cat-bar-bg"><div className="cat-bar-fill" style={{ width: `${(val / 5) * 100}%` }} /></div>
+          <span className="cat-val">{val.toFixed(1)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function BizRow({ b, t, saved, onToggleSave }: {
+  b: TrendBusiness
+  t: (k: string) => string
+  saved: boolean
+  onToggleSave: () => void
+}) {
   const [open, setOpen] = useState(false)
   const rising = b.status === 'rising'
   const falling = b.status === 'falling'
 
   return (
-    <div className="biz-row" onClick={() => setOpen(o => !o)}>
-      <div className="biz-row-top">
+    <div className="biz-row">
+      <div className="biz-row-top" onClick={() => setOpen(o => !o)}>
         <div className="biz-row-left">
-          <div style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text3)', letterSpacing: '0.06em', marginBottom: '4px' }}>
-            #{rank}
-          </div>
           <div className="biz-name">{b.name}</div>
           <div className="biz-meta">
-            {b.address ? `${b.address} · ` : ''}{b.rating.toFixed(1)} ★
+            {b.address ? `${b.address} · ` : ''}★ {b.rating.toFixed(1)}
+            {b.totalReviews > 0 ? ` (${b.totalReviews.toLocaleString()})` : ''}
           </div>
         </div>
-        <div className="biz-row-delta">
-          <span className={`delta-num ${b.status}`}>{deltaLabel(b)}</span>
-          <span className={`delta-label ${b.status}`}>
-            {rising ? t('results.rising').replace('🔥 ', '') :
-             falling ? t('results.falling').replace('💀 ', '') :
-             b.status === 'new' ? t('results.new').replace('✨ ', '') : t('results.stable').replace('→ ', '')}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span className={`status-pill ${b.status}`}>
+            {rising ? `↑ ${b.displayPrimary.replace('↑ ', '')}` :
+             falling ? `↓ ${b.displayPrimary.replace('↓ ', '')}` :
+             b.status === 'new' ? 'New' : 'Stable'}
           </span>
+          <ScoreBadge score={b.trendScore} status={b.status} />
+          <span style={{ color: 'var(--text3)', fontSize: '12px', marginLeft: 2 }}>{open ? '▲' : '▼'}</span>
         </div>
       </div>
 
       {open && (
         <div className="biz-detail">
-          <div className="detail-stats">
-            <span className="stat-tag">{b.recentCount} {t('results.reviews.30d')}</span>
-            {b.status !== 'new' && b.olderCount > 0 && (
-              <span className="stat-tag">{b.olderAvg.toFixed(1)} → {b.recentAvg.toFixed(1)} {t('score.explain')}</span>
-            )}
-            {b.totalReviews > 0 && (
-              <span className="stat-tag">{b.totalReviews.toLocaleString()} total</span>
-            )}
-          </div>
+          {/* AI Summary */}
+          {b.summary && (
+            <div className="ai-summary">
+              <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--teal)', marginBottom: '6px' }}>
+                AI Summary {b.whySource === 'claude' ? '· claude' : '· algo'}
+              </div>
+              {b.summary}
+            </div>
+          )}
 
-          {(rising || falling) && b.why.length > 0 && (
+          {/* Why */}
+          {b.why.length > 0 && (rising || falling) && (
             <div style={{ marginBottom: '12px' }}>
               <div className={`why-label ${b.status}`}>
                 {rising ? t('results.why.rising') : t('results.why.falling')}
               </div>
               {b.why.map((r, i) => (
                 <div key={i} className="why-item">
-                  <span style={{ color: rising ? 'var(--green)' : 'var(--red)', flexShrink: 0 }}>•</span>
+                  <span style={{ color: rising ? 'var(--teal)' : 'var(--red)', flexShrink: 0 }}>•</span>
                   <span>{r}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {b.sampleQuote && (
-            <div className="quote-block">&ldquo;{b.sampleQuote}&rdquo;</div>
-          )}
+          {/* Category bars */}
+          {b.categories && <CategoryBars cats={b.categories} />}
 
+          {/* Stats */}
+          <div className="detail-stats">
+            <span className="stat-tag">{b.recentCount} reviews / 30d</span>
+            {b.olderCount > 0 && b.status !== 'new' && (
+              <span className="stat-tag">{b.olderAvg.toFixed(1)} → {b.recentAvg.toFixed(1)} ★ {t('score.explain')}</span>
+            )}
+            {b.positivePct !== undefined && (
+              <span className="stat-tag">{b.positivePct}% positive</span>
+            )}
+          </div>
+
+          {/* Quote */}
+          {b.sampleQuote && <div className="quote-block">&ldquo;{b.sampleQuote}&rdquo;</div>}
+
+          {/* Actions */}
           <div className="detail-actions" onClick={e => e.stopPropagation()}>
             <a href={mapsUrl(b)} target="_blank" rel="noopener noreferrer" className="action-link primary">
               {t('results.navigate')}
@@ -83,6 +156,9 @@ function BizRow({ b, rank, t }: { b: TrendBusiness; rank: number; t: (k: string)
             <a href={reviewUrl(b)} target="_blank" rel="noopener noreferrer" className="action-link">
               {t('results.write.review')}
             </a>
+            <button className={`action-link save-btn${saved ? ' saved' : ''}`} onClick={onToggleSave}>
+              {saved ? '★ Saved' : '☆ Save'}
+            </button>
           </div>
         </div>
       )}
@@ -101,23 +177,17 @@ function SectionHead({ label, count }: { label: string; count: number }) {
   )
 }
 
-function ShareButton({ area, category, t }: { area: string; category: string; t: (k: string) => string }) {
+function ShareBtn({ area, category, t }: { area: string; category: string; t: (k: string) => string }) {
   const [copied, setCopied] = useState(false)
   const share = useCallback(async () => {
     const url = `${window.location.origin}/results?area=${encodeURIComponent(area)}&category=${encodeURIComponent(category)}`
-    const text = `${category} trends in ${area} — see what's rising & falling right now`
     if (navigator.share) {
-      try { await navigator.share({ title: 'TrendLens', text, url }); return } catch { /* fallback */ }
+      try { await navigator.share({ title: 'TrendLens', text: `${category} trends in ${area}`, url }); return } catch { /* */ }
     }
     await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopied(true); setTimeout(() => setCopied(false), 2000)
   }, [area, category])
-  return (
-    <button onClick={share} className="share-btn">
-      {copied ? '✓ Copied' : `↑ ${t('share.btn')}`}
-    </button>
-  )
+  return <button onClick={share} className="share-btn">{copied ? '✓ Copied' : `↑ ${t('share.btn')}`}</button>
 }
 
 function Inner() {
@@ -129,13 +199,14 @@ function Inner() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [langOpen, setLangOpen] = useState(false)
+  const { saved, toggle } = useSaved()
 
   useEffect(() => {
     if (!area || !category) { setError('Missing params'); setLoading(false); return }
     fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ area, category }),
+      body: JSON.stringify({ area, category, language: lang }),
     })
       .then(r => r.json())
       .then((d: SearchResult & { isDemo?: boolean; dataSource?: string; error?: string }) => {
@@ -144,6 +215,7 @@ function Inner() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [area, category])
 
   if (loading) return (
@@ -163,102 +235,54 @@ function Inner() {
 
   return (
     <div className="results-page" onClick={() => setLangOpen(false)}>
-      {/* Sticky header */}
       <div className="results-header">
-        <Link href="/" className="back-btn">← {t('back').replace('← ', '')}</Link>
-        <div className="results-title">
-          {category} in {area}
-        </div>
+        <Link href="/" className="back-btn">←</Link>
+        <div className="results-title">{category} in {area}</div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* Lang */}
-          <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
-            <button onClick={() => setLangOpen(o => !o)} style={{
-              background: 'none', border: 'none', color: 'var(--text3)',
-              fontFamily: 'var(--mono)', fontSize: '11px', cursor: 'pointer',
-              letterSpacing: '0.06em', padding: '2px 4px',
-            }}>
-              {LANG_OPTIONS.find(l => l.code === lang)?.label ?? 'EN'}
-            </button>
-            {langOpen && (
-              <div style={{
-                position: 'absolute', right: 0, top: '28px', background: 'var(--bg2)',
-                border: '1px solid var(--border)', minWidth: '130px', zIndex: 600,
-              }}>
-                {LANG_OPTIONS.map(opt => (
-                  <button key={opt.code} onClick={() => { setLang(opt.code); setLangOpen(false) }} style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    padding: '9px 14px', fontFamily: 'var(--mono)', fontSize: '11px',
-                    cursor: 'pointer', border: 'none', letterSpacing: '0.04em',
-                    background: opt.code === lang ? 'var(--bg3)' : 'var(--bg2)',
-                    color: opt.code === lang ? 'var(--text)' : 'var(--text2)',
-                    borderBottom: '1px solid var(--border)',
-                  }}>{opt.label}</button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Map link */}
-          {data?.businesses.some(b => b.lat && b.lng) && (
-            <Link
-              href={`/map?area=${encodeURIComponent(area)}&category=${encodeURIComponent(category)}`}
-              style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text3)', textDecoration: 'none', letterSpacing: '0.04em' }}>
-              Map
-            </Link>
+        <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+          <button onClick={() => setLangOpen(o => !o)} style={{
+            background: 'none', border: 'none', color: 'var(--text3)',
+            fontFamily: 'var(--mono)', fontSize: '11px', cursor: 'pointer', letterSpacing: '0.06em', padding: '2px 4px',
+          }}>
+            {LANG_OPTIONS.find(l => l.code === lang)?.label ?? 'EN'}
+          </button>
+          {langOpen && (
+            <div style={{ position: 'absolute', right: 0, top: '28px', background: 'var(--bg2)', border: '1px solid var(--border)', minWidth: '130px', zIndex: 600 }}>
+              {LANG_OPTIONS.map(opt => (
+                <button key={opt.code} onClick={() => { setLang(opt.code); setLangOpen(false) }} style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '9px 14px',
+                  fontFamily: 'var(--mono)', fontSize: '11px', cursor: 'pointer', border: 'none',
+                  background: opt.code === lang ? 'var(--bg3)' : 'var(--bg2)',
+                  color: opt.code === lang ? 'var(--teal)' : 'var(--text2)',
+                  borderBottom: '1px solid var(--border)',
+                }}>{opt.label}</button>
+              ))}
+            </div>
           )}
         </div>
+
+        {data?.businesses.some(b => b.lat && b.lng) && (
+          <Link href={`/map?area=${encodeURIComponent(area)}&category=${encodeURIComponent(category)}`}
+            style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text3)', textDecoration: 'none', letterSpacing: '0.04em', flexShrink: 0 }}>
+            Map
+          </Link>
+        )}
       </div>
 
-      {/* Demo notice */}
-      {data?.isDemo && (
-        <div className="demo-banner">
-          Sample data · Live real-time scraping available for major cities
-        </div>
-      )}
-
+      {data?.isDemo && <div className="demo-banner">Sample data · Live real-time scraping available for major cities</div>}
       {error && <div className="no-results">{error}</div>}
 
-      {/* Results in iPod list style */}
-      {rising.length > 0 && (
-        <>
-          <SectionHead label={t('results.rising')} count={rising.length} />
-          {rising.map((b, i) => <BizRow key={b.name} b={b} rank={i + 1} t={t} />)}
-        </>
-      )}
+      {rising.length > 0 && (<><SectionHead label={t('results.rising')} count={rising.length} />{rising.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
+      {falling.length > 0 && (<><SectionHead label={t('results.falling')} count={falling.length} />{falling.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
+      {newB.length > 0 && (<><SectionHead label={t('results.new')} count={newB.length} />{newB.slice(0, 6).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
+      {stable.length > 0 && (<><SectionHead label={t('results.stable')} count={stable.length} />{stable.slice(0, 3).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
 
-      {falling.length > 0 && (
-        <>
-          <SectionHead label={t('results.falling')} count={falling.length} />
-          {falling.map((b, i) => <BizRow key={b.name} b={b} rank={i + 1} t={t} />)}
-        </>
-      )}
-
-      {newB.length > 0 && (
-        <>
-          <SectionHead label={t('results.new')} count={newB.length} />
-          {newB.slice(0, 6).map((b, i) => <BizRow key={b.name} b={b} rank={i + 1} t={t} />)}
-        </>
-      )}
-
-      {stable.length > 0 && (
-        <>
-          <SectionHead label={t('results.stable')} count={stable.length} />
-          {stable.slice(0, 3).map((b, i) => <BizRow key={b.name} b={b} rank={i + 1} t={t} />)}
-        </>
-      )}
-
-      {!loading && !error && !data?.businesses.length && (
-        <div className="no-results">{t('results.no.results')}</div>
-      )}
+      {!loading && !error && !data?.businesses.length && <div className="no-results">{t('results.no.results')}</div>}
 
       {data && (
         <div className="cache-note">
-          <ShareButton area={area} category={category} t={t} />
-          <span>
-            {data.total_scraped} {t('results.analyzed')} ·{' '}
-            {age < 1 ? t('results.just.now') : `${age}${t('results.hours.ago')}`}
-          </span>
+          <ShareBtn area={area} category={category} t={t} />
+          <span>{data.total_scraped} {t('results.analyzed')} · {age < 1 ? t('results.just.now') : `${age}${t('results.hours.ago')}`}</span>
         </div>
       )}
     </div>
@@ -266,9 +290,5 @@ function Inner() {
 }
 
 export default function ResultsPage() {
-  return (
-    <Suspense fallback={<div className="overlay"><div className="spinner" /></div>}>
-      <Inner />
-    </Suspense>
-  )
+  return <Suspense fallback={<div className="overlay"><div className="spinner" /></div>}><Inner /></Suspense>
 }

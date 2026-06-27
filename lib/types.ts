@@ -21,20 +21,36 @@ export interface RawReview {
   [key: string]: unknown
 }
 
+export interface CategoryScores {
+  food: number
+  service: number
+  atmosphere: number
+  price: number
+  cleanliness: number
+}
+
 export interface TrendBusiness {
   name: string
   address: string
   mapsUrl: string
   rating: number
   totalReviews: number
-  recentAvg: number       // avg rating last 30 days
-  olderAvg: number        // avg rating 31-90 days ago
-  trendDelta: number      // recentAvg - olderAvg
-  recentCount: number     // review count last 30 days
-  olderCount: number      // review count 31-90 days ago
+  recentAvg: number
+  olderAvg: number
+  trendDelta: number
+  recentCount: number
+  olderCount: number
+  velocity: number
+  composite: number
+  trendScore: number          // 0-100 single number
+  displayPrimary: string      // "3× more reviews" or "↑ +0.5★"
   status: 'rising' | 'falling' | 'stable' | 'new'
   sampleQuote: string
   why: string[]
+  whySource: 'claude' | 'algo'
+  summary?: string            // AI paragraph
+  categories?: CategoryScores // Food/Service/Atmosphere/Price/Cleanliness
+  positivePct?: number        // % of 4-5 star recent reviews
   lat?: number
   lng?: number
 }

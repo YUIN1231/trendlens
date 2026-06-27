@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import BottomNav from './components/BottomNav'
 
 export const metadata: Metadata = {
-  title: 'TrendLens — What\'s hot right now',
-  description: 'See which restaurants, cafés, and shops are rising or falling on Google Maps this week. Any city, any category.',
+  title: 'TrendLens — Find what\'s rising or falling',
+  description: 'AI-powered Google Maps trend detector. See which restaurants, cafés, and shops are rising or falling — any city, any category.',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'TrendLens' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'TrendLens' },
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a0a',
+  themeColor: '#F5F4F0',
   width: 'device-width',
   initialScale: 1,
 }
@@ -17,7 +18,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <BottomNav />
+      </body>
     </html>
   )
 }

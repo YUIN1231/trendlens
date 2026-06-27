@@ -1,12 +1,24 @@
 import type { TrendBusiness } from './types'
 
-// Realistic demo data shown when live scraping is unavailable
-// Structure matches exactly what real Apify + trend analysis produces
+type DemoInput = Omit<TrendBusiness, 'velocity' | 'composite' | 'trendScore' | 'displayPrimary' | 'whySource'>
+
+function d(b: DemoInput): TrendBusiness {
+  const vel = b.olderCount > 0 ? b.recentCount / b.olderCount - 1 : 0
+  const vn = Math.tanh(vel / 2)
+  const rn = Math.max(-1, Math.min(1, b.trendDelta / 2))
+  const comp = 0.6 * vn + 0.4 * rn
+  const score = Math.round(Math.min(100, Math.max(20, b.rating * 18.5 + comp * 12)))
+  const disp = b.status === 'new' ? 'NEW'
+    : b.status === 'stable' ? '→'
+    : b.trendDelta > 0 ? `↑ +${b.trendDelta.toFixed(1)}★`
+    : `↓ ${b.trendDelta.toFixed(1)}★`
+  return { ...b, velocity: Math.round(vel * 100) / 100, composite: Math.round(comp * 100) / 100, trendScore: score, displayPrimary: disp, whySource: 'algo' }
+}
 
 const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
   melbourne: {
     café: [
-      {
+      d({
         name: 'Axil Coffee Roasters',
         address: '322 Burwood Rd, Hawthorn VIC 3122',
         mapsUrl: 'https://www.google.com/maps/place/Axil+Coffee+Roasters',
@@ -20,8 +32,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: 'Hands down the best flat white in Melbourne. New batch of single origin is incredible.',
         why: ['Rating improved from 4.3 to 4.8 ★', 'More positive mentions of food & drink quality', 'Review activity increased significantly this month'],
-      },
-      {
+      }),
+      d({
         name: 'Proud Mary Coffee',
         address: '172 Oxford St, Collingwood VIC 3066',
         mapsUrl: 'https://www.google.com/maps/place/Proud+Mary+Coffee',
@@ -35,8 +47,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: "The new seasonal menu is a game changer. Worth every cent.",
         why: ['Rating improved from 4.2 to 4.7 ★', 'More positive mentions of new menu / items', 'More positive mentions of atmosphere'],
-      },
-      {
+      }),
+      d({
         name: 'Market Lane Coffee',
         address: '109 Franklin St, Melbourne VIC 3000',
         mapsUrl: 'https://www.google.com/maps/place/Market+Lane+Coffee',
@@ -50,8 +62,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'stable',
         sampleQuote: 'Consistent quality, always reliable.',
         why: [],
-      },
-      {
+      }),
+      d({
         name: 'Seven Seeds',
         address: '114 Berkeley St, Carlton VIC 3053',
         mapsUrl: 'https://www.google.com/maps/place/Seven+Seeds+Coffee+Roasters',
@@ -65,8 +77,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'falling',
         sampleQuote: 'Used to be my go-to but service has slipped badly. Waited 25 mins for a latte.',
         why: ['Rating dropped from 4.4 to 3.8 ★', 'Complaints about waiting time increasing', 'Complaints about service & staff increasing'],
-      },
-      {
+      }),
+      d({
         name: 'Brunetti Classico',
         address: 'Shop 1/380 Lygon St, Carlton VIC 3053',
         mapsUrl: 'https://www.google.com/maps/place/Brunetti+Classico',
@@ -80,10 +92,10 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'falling',
         sampleQuote: 'Overpriced and quality has dropped since they changed ownership. Disappointing.',
         why: ['Rating dropped from 4.2 to 3.5 ★', 'Complaints about value for money increasing', '5 low-rated reviews appeared recently'],
-      },
+      }),
     ],
     ramen: [
-      {
+      d({
         name: 'Hakata Gensuke',
         address: '168 Russell St, Melbourne VIC 3000',
         mapsUrl: 'https://www.google.com/maps/place/Hakata+Gensuke',
@@ -97,8 +109,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: 'The tonkotsu here is on another level. New chef has elevated everything.',
         why: ['Rating improved from 4.3 to 4.8 ★', 'More positive mentions of food & drink quality', 'Review activity increased significantly this month'],
-      },
-      {
+      }),
+      d({
         name: 'Ippudo Melbourne',
         address: '19 Artemis Ln, Melbourne VIC 3000',
         mapsUrl: 'https://www.google.com/maps/place/Ippudo+Melbourne',
@@ -112,12 +124,12 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'falling',
         sampleQuote: 'Quality has declined. Portion sizes are smaller and broth is watery.',
         why: ['Rating dropped from 4.4 to 3.7 ★', 'Complaints about food & drink quality increasing', '6 low-rated reviews appeared recently'],
-      },
+      }),
     ],
   },
   tokyo: {
     ramen: [
-      {
+      d({
         name: '麺屋一燈',
         address: '東京都新宿区新宿3-17-3',
         mapsUrl: 'https://www.google.com/maps/place/麺屋一燈',
@@ -131,8 +143,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: '今月は特に出汁の深みが増している。並んでも食べる価値あり。',
         why: ['Rating improved from 4.4 to 4.9 ★', 'More positive mentions of food & drink quality', 'Review activity increased significantly this month'],
-      },
-      {
+      }),
+      d({
         name: 'らーめん山頭火',
         address: '東京都渋谷区道玄坂1-3-2',
         mapsUrl: 'https://www.google.com/maps/place/ラーメン山頭火',
@@ -146,8 +158,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'falling',
         sampleQuote: 'スープが薄くなった気がする。以前の濃厚さがない。',
         why: ['Rating dropped from 4.3 to 3.6 ★', 'Complaints about food & drink quality increasing', 'Complaints about value for money increasing'],
-      },
-      {
+      }),
+      d({
         name: '新宿 彩華ラーメン',
         address: '東京都新宿区歌舞伎町1-8-1',
         mapsUrl: 'https://www.google.com/maps/place/彩華ラーメン+新宿店',
@@ -161,10 +173,10 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'new',
         sampleQuote: '先月オープンしたばかりだけど、すでに行列。スープが本格的。',
         why: [],
-      },
+      }),
     ],
     café: [
-      {
+      d({
         name: 'Blue Bottle Coffee 青山カフェ',
         address: '東京都港区南青山3-13-14',
         mapsUrl: 'https://www.google.com/maps/place/Blue+Bottle+Coffee+青山カフェ',
@@ -178,12 +190,12 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: '新しいシングルオリジンが素晴らしい。スタッフの知識も豊富。',
         why: ['Rating improved from 4.3 to 4.8 ★', 'More positive mentions of food & drink quality', 'More positive mentions of service & staff'],
-      },
+      }),
     ],
   },
   'new york': {
     bar: [
-      {
+      d({
         name: 'Death & Co',
         address: '433 E 6th St, New York, NY 10009',
         mapsUrl: 'https://www.google.com/maps/place/Death+and+Company',
@@ -197,8 +209,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: "New bartender is a genius. The seasonal cocktail menu is absolutely stunning.",
         why: ['Rating improved from 4.4 to 4.9 ★', 'More positive mentions of service & staff', 'More positive mentions of new menu / items'],
-      },
-      {
+      }),
+      d({
         name: 'The Dead Rabbit',
         address: '30 Water St, New York, NY 10004',
         mapsUrl: 'https://www.google.com/maps/place/The+Dead+Rabbit',
@@ -212,10 +224,10 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'falling',
         sampleQuote: 'Prices doubled but quality halved. Management change has ruined this place.',
         why: ['Rating dropped from 4.6 to 3.8 ★', 'Complaints about value for money increasing', 'Complaints about service & staff increasing'],
-      },
+      }),
     ],
     café: [
-      {
+      d({
         name: 'Bluestone Lane',
         address: '55 Greenwich Ave, New York, NY 10014',
         mapsUrl: 'https://www.google.com/maps/place/Bluestone+Lane',
@@ -229,12 +241,12 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: "Best flat white in the city, hands down. The avocado toast is a masterpiece.",
         why: ['Rating improved from 4.2 to 4.7 ★', 'More positive mentions of food & drink quality', 'Review activity increased significantly this month'],
-      },
+      }),
     ],
   },
   paris: {
     restaurant: [
-      {
+      d({
         name: 'Le Comptoir du Relais',
         address: '9 Carrefour de l\'Odéon, 75006 Paris',
         mapsUrl: 'https://www.google.com/maps/place/Le+Comptoir+du+Relais',
@@ -248,8 +260,8 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'rising',
         sampleQuote: "Nouveau chef, nouvelle énergie. Le tartare est exceptionnel ce mois-ci.",
         why: ['Rating improved from 4.1 to 4.7 ★', 'More positive mentions of food & drink quality', 'More positive mentions of service & staff'],
-      },
-      {
+      }),
+      d({
         name: 'Café de Flore',
         address: '172 Bd Saint-Germain, 75006 Paris',
         mapsUrl: 'https://www.google.com/maps/place/Café+de+Flore',
@@ -263,7 +275,7 @@ const DEMO_SETS: Record<string, Record<string, TrendBusiness[]>> = {
         status: 'falling',
         sampleQuote: "Tourist trap now. €8 for a mediocre espresso and rude service.",
         why: ['Rating dropped from 4.1 to 3.4 ★', 'Complaints about value for money increasing', 'Complaints about service & staff increasing'],
-      },
+      }),
     ],
   },
 }

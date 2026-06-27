@@ -33,6 +33,7 @@ export async function searchWithOpenWebNinja(area: string, category: string): Pr
     `https://api.openwebninja.com/local-business-data/search?${searchParams}`,
     { headers }
   )
+  if (searchRes.status === 429) throw new Error('OpenWeb Ninja rate limit — please try again later')
   if (!searchRes.ok) {
     const text = await searchRes.text()
     throw new Error(`OpenWeb Ninja search error ${searchRes.status}: ${text.slice(0, 200)}`)
