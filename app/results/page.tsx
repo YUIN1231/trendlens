@@ -73,11 +73,12 @@ function CategoryBars({ cats }: { cats: CategoryScores }) {
   )
 }
 
-function BizRow({ b, t, saved, onToggleSave }: {
+function BizRow({ b, t, saved, onToggleSave, area }: {
   b: TrendBusiness
   t: (k: string) => string
   saved: boolean
   onToggleSave: () => void
+  area: string
 }) {
   const [open, setOpen] = useState(false)
   const rising = b.status === 'rising'
@@ -153,6 +154,9 @@ function BizRow({ b, t, saved, onToggleSave }: {
             <a href={mapsUrl(b)} target="_blank" rel="noopener noreferrer" className="action-link primary">
               {t('results.navigate')}
             </a>
+            {(b.status === 'rising' || b.status === 'falling') && (
+              <CopyCaption b={b} area={area} />
+            )}
             <a href={reviewUrl(b)} target="_blank" rel="noopener noreferrer" className="action-link">
               {t('results.write.review')}
             </a>
@@ -187,7 +191,24 @@ function ShareBtn({ area, category, t }: { area: string; category: string; t: (k
     await navigator.clipboard.writeText(url)
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }, [area, category])
-  return <button onClick={share} className="share-btn">{copied ? '✓ Copied' : `↑ ${t('share.btn')}`}</button>
+  return <button onClick={share} className="share-btn">{copied ? '✓ Copied' : t('share.btn')}</button>
+}
+
+function CopyCaption({ b, area }: { b: TrendBusiness; area: string }) {
+  const [copied, setCopied] = useState(false)
+  const copy = useCallback(async () => {
+    const month = new Date().toLocaleString('en', { month: 'long' })
+    const status = b.status === 'rising' ? 'blowing up' : b.status === 'falling' ? 'losing steam' : 'new'
+    const hook = b.why[0] ?? b.summary?.slice(0, 80) ?? ''
+    const caption = `I used AI to find what's ${status} in ${area} this ${month} 🔥\n\n→ ${b.name} (TrendLens Score: ${b.trendScore})\n${hook ? `\n"${hook}"\n` : ''}\nCheck it yourself: trendlens-nu.vercel.app\n\n#${area.replace(/\s/g, '')} #trendlens #${status.replace(/\s/g, '')}`
+    await navigator.clipboard.writeText(caption)
+    setCopied(true); setTimeout(() => setCopied(false), 2500)
+  }, [b, area])
+  return (
+    <button className="action-link copy-caption-btn" onClick={copy} title="Copy TikTok/Reels caption">
+      {copied ? '✓ Copied!' : '↗ Copy caption'}
+    </button>
+  )
 }
 
 function Inner() {
@@ -237,7 +258,10 @@ function Inner() {
     <div className="results-page" onClick={() => setLangOpen(false)}>
       <div className="results-header">
         <Link href="/" className="back-btn">←</Link>
-        <div className="results-title">{category} in {area}</div>
+        <div className="results-title">
+          {category} in {area}
+          <span className="results-month"> · {new Date().toLocaleString('en', { month: 'long' })}</span>
+        </div>
 
         <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
           <button onClick={() => setLangOpen(o => !o)} style={{
@@ -272,16 +296,18 @@ function Inner() {
       {data?.isDemo && <div className="demo-banner">Sample data · Live real-time scraping available for major cities</div>}
       {error && <div className="no-results">{error}</div>}
 
-      {rising.length > 0 && (<><SectionHead label={t('results.rising')} count={rising.length} />{rising.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
-      {falling.length > 0 && (<><SectionHead label={t('results.falling')} count={falling.length} />{falling.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
-      {newB.length > 0 && (<><SectionHead label={t('results.new')} count={newB.length} />{newB.slice(0, 6).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
-      {stable.length > 0 && (<><SectionHead label={t('results.stable')} count={stable.length} />{stable.slice(0, 3).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />)}</>)}
+      {rising.length > 0 && (<><SectionHead label={t('results.rising')} count={rising.length} />{rising.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
+      {falling.length > 0 && (<><SectionHead label={t('results.falling')} count={falling.length} />{falling.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
+      {newB.length > 0 && (<><SectionHead label={t('results.new')} count={newB.length} />{newB.slice(0, 6).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
+      {stable.length > 0 && (<><SectionHead label={t('results.stable')} count={stable.length} />{stable.slice(0, 3).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
 
       {!loading && !error && !data?.businesses.length && <div className="no-results">{t('results.no.results')}</div>}
 
       {data && (
         <div className="cache-note">
-          <ShareBtn area={area} category={category} t={t} />
+          <div className="share-row">
+            <ShareBtn area={area} category={category} t={t} />
+          </div>
           <span>{data.total_scraped} {t('results.analyzed')} · {age < 1 ? t('results.just.now') : `${age}${t('results.hours.ago')}`}</span>
         </div>
       )}

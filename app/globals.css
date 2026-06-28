@@ -271,6 +271,11 @@ body { min-height: 100dvh; }
   white-space: nowrap;
   letter-spacing: -0.01em;
 }
+.results-month {
+  font-weight: 400;
+  color: var(--text3);
+  font-size: 13px;
+}
 
 .section-sep {
   padding: 16px 20px 8px;
@@ -458,6 +463,8 @@ body { min-height: 100dvh; }
 .action-link.primary { border-color: var(--teal); color: var(--teal); }
 .action-link.primary:hover { background: var(--teal); color: #fff; }
 .action-link.save-btn.saved { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
+.action-link.copy-caption-btn { border-color: var(--teal); color: var(--teal); }
+.action-link.copy-caption-btn:hover { background: var(--teal); color: #fff; }
 
 /* ── Cache / misc ────────────────── */
 .cache-note {
@@ -471,6 +478,12 @@ body { min-height: 100dvh; }
   flex-direction: column;
   gap: 10px;
   align-items: center;
+}
+.share-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
 }
 .share-btn {
   font-family: var(--mono);
@@ -615,5 +628,5 @@ body { min-height: 100dvh; }
   .biz-row-top { padding: 14px 16px; }
   .biz-detail { padding: 0 16px 16px; }
   .biz-name { font-size: 15px; }
-  .score-badge { width: 42px; height: 42px; font-size: 14px; }
+  .score-badge { width: 46px; height: 46px; font-size: 15px; }
 }
