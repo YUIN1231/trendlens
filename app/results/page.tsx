@@ -49,12 +49,6 @@ function useSaved() {
   return { saved, toggle }
 }
 
-function ScoreBadge({ score, status }: { score: number; status: TrendBusiness['status'] }) {
-  return (
-    <div className={`score-badge ${status}`} title="TrendLens Score">{score}</div>
-  )
-}
-
 function CategoryBars({ cats }: { cats: CategoryScores }) {
   const entries: [string, number][] = [
     ['Food', cats.food], ['Service', cats.service],
@@ -73,12 +67,63 @@ function CategoryBars({ cats }: { cats: CategoryScores }) {
   )
 }
 
-function BizRow({ b, t, saved, onToggleSave, area }: {
+function HeroCard({ b, saved, onToggleSave, t }: {
+  b: TrendBusiness
+  saved: boolean
+  onToggleSave: () => void
+  t: (k: string) => string
+}) {
+  const content = b.summary ?? (b.why.length > 0 ? b.why.join(' · ') : '')
+  return (
+    <div className="hero-card">
+      <div className="hero-card-top">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="hero-name">{b.name}</div>
+          <div className="biz-meta" style={{ marginTop: 4 }}>
+            {b.address ? b.address.split(',').slice(0, 2).join(',') + ' · ' : ''}
+            ★ {b.rating.toFixed(1)}{b.totalReviews > 0 ? ` (${b.totalReviews.toLocaleString()})` : ''}
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <span className="status-pill rising">
+              ↑ {b.displayPrimary.replace('↑ ', '')}
+            </span>
+          </div>
+        </div>
+        <div className="hero-score">{b.trendScore}</div>
+      </div>
+
+      {content && <div className="hero-summary">{content}</div>}
+
+      {b.sampleQuote && (
+        <div className="hero-quote">&ldquo;{b.sampleQuote}&rdquo;</div>
+      )}
+
+      {b.categories && <CategoryBars cats={b.categories} />}
+
+      <div className="hero-actions">
+        <a href={mapsUrl(b)} target="_blank" rel="noopener noreferrer" className="hero-btn primary">
+          {t('results.navigate')}
+        </a>
+        <a href={reviewUrl(b)} target="_blank" rel="noopener noreferrer" className="hero-btn">
+          {t('results.write.review')}
+        </a>
+        <button className={`hero-btn hero-save${saved ? ' saved' : ''}`} onClick={onToggleSave}>
+          {saved ? '★' : '☆'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ScoreBadge({ score, status }: { score: number; status: TrendBusiness['status'] }) {
+  return <div className={`score-badge ${status}`}>{score}</div>
+}
+
+function BizRow({ b, t, saved, onToggleSave }: {
   b: TrendBusiness
   t: (k: string) => string
   saved: boolean
   onToggleSave: () => void
-  area: string
 }) {
   const [open, setOpen] = useState(false)
   const rising = b.status === 'rising'
@@ -90,7 +135,7 @@ function BizRow({ b, t, saved, onToggleSave, area }: {
         <div className="biz-row-left">
           <div className="biz-name">{b.name}</div>
           <div className="biz-meta">
-            {b.address ? `${b.address} · ` : ''}★ {b.rating.toFixed(1)}
+            {b.address ? `${b.address.split(',')[0]} · ` : ''}★ {b.rating.toFixed(1)}
             {b.totalReviews > 0 ? ` (${b.totalReviews.toLocaleString()})` : ''}
           </div>
         </div>
@@ -98,26 +143,23 @@ function BizRow({ b, t, saved, onToggleSave, area }: {
           <span className={`status-pill ${b.status}`}>
             {rising ? `↑ ${b.displayPrimary.replace('↑ ', '')}` :
              falling ? `↓ ${b.displayPrimary.replace('↓ ', '')}` :
-             b.status === 'new' ? 'New' : 'Stable'}
+             b.status === 'new' ? 'New' : '→'}
           </span>
           <ScoreBadge score={b.trendScore} status={b.status} />
-          <span style={{ color: 'var(--text3)', fontSize: '12px', marginLeft: 2 }}>{open ? '▲' : '▼'}</span>
+          <span style={{ color: 'var(--text3)', fontSize: '11px', marginLeft: 2 }}>{open ? '▲' : '▼'}</span>
         </div>
       </div>
 
       {open && (
         <div className="biz-detail">
-          {/* AI Summary */}
           {b.summary && (
             <div className="ai-summary">
               <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--teal)', marginBottom: '6px' }}>
-                AI Summary {b.whySource === 'claude' ? '· claude' : '· algo'}
+                AI Summary
               </div>
               {b.summary}
             </div>
           )}
-
-          {/* Why */}
           {b.why.length > 0 && (rising || falling) && (
             <div style={{ marginBottom: '12px' }}>
               <div className={`why-label ${b.status}`}>
@@ -131,25 +173,17 @@ function BizRow({ b, t, saved, onToggleSave, area }: {
               ))}
             </div>
           )}
-
-          {/* Category bars */}
           {b.categories && <CategoryBars cats={b.categories} />}
-
-          {/* Stats */}
           <div className="detail-stats">
             <span className="stat-tag">{b.recentCount} reviews / 30d</span>
             {b.olderCount > 0 && b.status !== 'new' && (
-              <span className="stat-tag">{b.olderAvg.toFixed(1)} → {b.recentAvg.toFixed(1)} ★ {t('score.explain')}</span>
+              <span className="stat-tag">{b.olderAvg.toFixed(1)} → {b.recentAvg.toFixed(1)} ★</span>
             )}
             {b.positivePct !== undefined && (
               <span className="stat-tag">{b.positivePct}% positive</span>
             )}
           </div>
-
-          {/* Quote */}
           {b.sampleQuote && <div className="quote-block">&ldquo;{b.sampleQuote}&rdquo;</div>}
-
-          {/* Actions */}
           <div className="detail-actions" onClick={e => e.stopPropagation()}>
             <a href={mapsUrl(b)} target="_blank" rel="noopener noreferrer" className="action-link primary">
               {t('results.navigate')}
@@ -190,7 +224,6 @@ function ShareBtn({ area, category, t }: { area: string; category: string; t: (k
   }, [area, category])
   return <button onClick={share} className="share-btn">{copied ? '✓ Copied' : t('share.btn')}</button>
 }
-
 
 function Inner() {
   const params = useSearchParams()
@@ -235,13 +268,16 @@ function Inner() {
   const stable  = data?.businesses.filter(b => b.status === 'stable') ?? []
   const age     = data?.cached_at ? Math.round((Date.now() - new Date(data.cached_at).getTime()) / 3600000) : 0
 
+  const [heroRising, ...restRising] = rising
+  const month = new Date().toLocaleString('en', { month: 'long' })
+
   return (
     <div className="results-page" onClick={() => setLangOpen(false)}>
       <div className="results-header">
         <Link href="/" className="back-btn">←</Link>
         <div className="results-title">
           {category} in {area}
-          <span className="results-month"> · {new Date().toLocaleString('en', { month: 'long' })}</span>
+          <span className="results-month"> · {month}</span>
         </div>
 
         <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
@@ -267,29 +303,75 @@ function Inner() {
         </div>
 
         {data?.businesses.some(b => b.lat && b.lng) && (
-          <Link href={`/map?area=${encodeURIComponent(area)}&category=${encodeURIComponent(category)}`}
-            style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text3)', textDecoration: 'none', letterSpacing: '0.04em', flexShrink: 0 }}>
+          <Link
+            href={`/map?area=${encodeURIComponent(area)}&category=${encodeURIComponent(category)}`}
+            style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text3)', textDecoration: 'none', letterSpacing: '0.04em', flexShrink: 0 }}
+          >
             Map
           </Link>
         )}
       </div>
 
-      {data?.isDemo && <div className="demo-banner">Sample data · Live real-time scraping available for major cities</div>}
+      {data?.isDemo && (
+        <div className="demo-banner">Sample data · Real-time scraping active for major cities</div>
+      )}
       {error && <div className="no-results">{error}</div>}
 
-      {rising.length > 0 && (<><SectionHead label={t('results.rising')} count={rising.length} />{rising.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
-      {falling.length > 0 && (<><SectionHead label={t('results.falling')} count={falling.length} />{falling.map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
-      {newB.length > 0 && (<><SectionHead label={t('results.new')} count={newB.length} />{newB.slice(0, 6).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
-      {stable.length > 0 && (<><SectionHead label={t('results.stable')} count={stable.length} />{stable.slice(0, 3).map(b => <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} area={area} />)}</>)}
+      {/* Rising: hero card first, rest collapsed */}
+      {rising.length > 0 && (
+        <>
+          <SectionHead label={t('results.rising')} count={rising.length} />
+          {heroRising && (
+            <HeroCard
+              b={heroRising}
+              saved={saved.has(heroRising.name)}
+              onToggleSave={() => toggle(heroRising.name, heroRising)}
+              t={t}
+            />
+          )}
+          {restRising.map(b => (
+            <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />
+          ))}
+        </>
+      )}
 
-      {!loading && !error && !data?.businesses.length && <div className="no-results">{t('results.no.results')}</div>}
+      {falling.length > 0 && (
+        <>
+          <SectionHead label={t('results.falling')} count={falling.length} />
+          {falling.map(b => (
+            <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />
+          ))}
+        </>
+      )}
+
+      {newB.length > 0 && (
+        <>
+          <SectionHead label={t('results.new')} count={newB.length} />
+          {newB.slice(0, 6).map(b => (
+            <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />
+          ))}
+        </>
+      )}
+
+      {stable.length > 0 && (
+        <>
+          <SectionHead label={t('results.stable')} count={stable.length} />
+          {stable.slice(0, 3).map(b => (
+            <BizRow key={b.name} b={b} t={t} saved={saved.has(b.name)} onToggleSave={() => toggle(b.name, b)} />
+          ))}
+        </>
+      )}
+
+      {!loading && !error && !data?.businesses.length && (
+        <div className="no-results">{t('results.no.results')}</div>
+      )}
 
       {data && (
         <div className="cache-note">
-          <div className="share-row">
-            <ShareBtn area={area} category={category} t={t} />
-          </div>
-          <span>{data.total_scraped} {t('results.analyzed')} · {age < 1 ? t('results.just.now') : `${age}${t('results.hours.ago')}`}</span>
+          <ShareBtn area={area} category={category} t={t} />
+          <span>
+            {data.total_scraped} {t('results.analyzed')} · {age < 1 ? t('results.just.now') : `${age}${t('results.hours.ago')}`}
+          </span>
         </div>
       )}
     </div>
@@ -297,5 +379,9 @@ function Inner() {
 }
 
 export default function ResultsPage() {
-  return <Suspense fallback={<div className="overlay"><div className="spinner" /></div>}><Inner /></Suspense>
+  return (
+    <Suspense fallback={<div className="overlay"><div className="spinner" /></div>}>
+      <Inner />
+    </Suspense>
+  )
 }

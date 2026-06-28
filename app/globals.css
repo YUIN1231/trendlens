@@ -33,13 +33,22 @@ body { min-height: 100dvh; }
   padding-bottom: calc(64px + env(safe-area-inset-bottom));
 }
 
-/* ── Landing / Discover ─────────── */
+/* ── Home / Discover ───────────── */
+.home-wrap {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 64px 24px 24px;
+}
+
+/* legacy alias */
 .landing {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 72px 24px 20px;
+  padding: 64px 24px 24px;
 }
 
 .wordmark {
@@ -60,23 +69,51 @@ body { min-height: 100dvh; }
 }
 
 .headline {
-  font-size: clamp(30px, 7vw, 60px);
+  font-size: clamp(28px, 7vw, 52px);
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 1.08;
-  text-align: center;
-  margin-bottom: 16px;
-  max-width: 640px;
+  line-height: 1.1;
+  text-align: left;
+  margin-bottom: 14px;
+  max-width: 460px;
+  width: 100%;
 }
 
 .subline {
-  font-size: clamp(14px, 1.8vw, 16px);
+  font-size: 15px;
   color: var(--text2);
-  text-align: center;
-  margin-bottom: 48px;
-  max-width: 380px;
-  line-height: 1.7;
+  text-align: left;
+  margin-bottom: 36px;
+  max-width: 460px;
+  width: 100%;
+  line-height: 1.65;
   letter-spacing: 0.01em;
+}
+
+.popular-section {
+  margin-top: 24px;
+  width: 100%;
+  max-width: 460px;
+}
+
+.popular-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+
+.home-footer {
+  margin-top: auto;
+  padding-top: 40px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  text-align: center;
+  width: 100%;
 }
 
 /* ── Search form ─────────────────── */
@@ -281,6 +318,106 @@ body { min-height: 100dvh; }
   padding: 16px 20px 8px;
   border-bottom: 1px solid var(--border);
 }
+
+/* ── Hero card (first rising result) ─ */
+.hero-card {
+  background: var(--bg2);
+  padding: 20px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.hero-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.hero-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1.15;
+  margin-bottom: 3px;
+}
+
+.hero-score {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--teal-light);
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
+.hero-summary {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.65;
+  margin-bottom: 12px;
+  letter-spacing: 0.01em;
+}
+
+.hero-quote {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+  padding-left: 12px;
+  border-left: 2px solid var(--border2);
+  margin-bottom: 16px;
+  line-height: 1.55;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.hero-btn {
+  flex: 1;
+  padding: 12px 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border: 1px solid var(--border2);
+  background: none;
+  color: var(--text2);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.hero-btn.primary {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.hero-btn.primary:hover { background: var(--teal); color: #fff; }
+
+.hero-btn.hero-save {
+  flex: 0 0 48px;
+  font-size: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.hero-btn.hero-save.saved { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
 
 /* ── Business row ────────────────── */
 .biz-row {
@@ -619,9 +756,9 @@ body { min-height: 100dvh; }
 
 /* ── Mobile ──────────────────────── */
 @media (max-width: 600px) {
-  .landing { padding: 56px 20px 20px; }
-  .headline { margin-bottom: 12px; }
-  .subline { margin-bottom: 36px; font-size: 15px; }
+  .home-wrap, .landing { padding: 52px 20px 20px; }
+  .headline { font-size: clamp(26px, 8vw, 38px); margin-bottom: 10px; }
+  .subline { margin-bottom: 28px; font-size: 14px; }
   .text-input { padding: 15px; font-size: 16px; }
   .search-btn { padding: 16px; }
   .results-header { padding: 14px 16px; }
@@ -629,4 +766,8 @@ body { min-height: 100dvh; }
   .biz-detail { padding: 0 16px 16px; }
   .biz-name { font-size: 15px; }
   .score-badge { width: 46px; height: 46px; font-size: 15px; }
+  .hero-card { padding: 16px; }
+  .hero-name { font-size: 19px; }
+  .hero-score { width: 56px; height: 56px; font-size: 19px; }
+  .hero-btn { padding: 11px 6px; font-size: 10px; }
 }
