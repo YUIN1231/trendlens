@@ -63,7 +63,7 @@ export async function searchWithHasData(area: string, category: string): Promise
   }
 
   const searchBody = await searchRes.json() as { localResults?: HasDataBusiness[] }
-  const businesses = (searchBody.localResults ?? []).slice(0, 10)
+  const businesses = (searchBody.localResults ?? []).slice(0, 15)
   if (!businesses.length) return []
 
   // Step 3: Fetch reviews in small batches (avoid rate limits)

@@ -646,6 +646,17 @@ body { min-height: 100dvh; }
   background: var(--bg3);
 }
 
+.thin-data-banner {
+  padding: 12px 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--amber);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.03em;
+  background: #FFF8F0;
+  line-height: 1.6;
+}
+
 .no-results {
   padding: 80px 24px;
   font-family: var(--mono);

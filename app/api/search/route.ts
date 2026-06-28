@@ -11,8 +11,28 @@ import type { SearchResult, RawReview } from '@/lib/types'
 
 export const maxDuration = 300
 
+// ── In-memory rate limiter (10 searches / IP / hour) ──────────
+const g = globalThis as Record<string, unknown>
+if (!g.__tl_rl) g.__tl_rl = new Map<string, { count: number; resetAt: number }>()
+const RL = g.__tl_rl as Map<string, { count: number; resetAt: number }>
+const RATE_LIMIT = 10
+const RATE_WINDOW = 60 * 60 * 1000
+
+function checkRate(ip: string): boolean {
+  const now = Date.now()
+  const e = RL.get(ip)
+  if (!e || now > e.resetAt) { RL.set(ip, { count: 1, resetAt: now + RATE_WINDOW }); return true }
+  if (e.count >= RATE_LIMIT) return false
+  e.count++; return true
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (!checkRate(ip)) {
+      return NextResponse.json({ error: 'Too many searches. Please wait an hour and try again.' }, { status: 429 })
+    }
+
     const { area, category, language = 'en' } = await req.json() as {
       area: string; category: string; language?: 'en' | 'ja'
     }

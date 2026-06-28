@@ -317,6 +317,14 @@ function Inner() {
       )}
       {error && <div className="no-results">{error}</div>}
 
+      {/* Thin data warning: no rising or falling found */}
+      {!error && data && rising.length === 0 && falling.length === 0 && (newB.length > 0 || stable.length > 0) && (
+        <div className="thin-data-banner">
+          No strong trend signals yet for this search.
+          Results below are newly listed or holding steady — try a larger city or broader category for rising/falling data.
+        </div>
+      )}
+
       {/* Rising: hero card first, rest collapsed */}
       {rising.length > 0 && (
         <>

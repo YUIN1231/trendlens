@@ -56,6 +56,12 @@ export default function Home() {
     if (!a.trim() || !c.trim()) return
     setError(''); setLoading(true)
     try {
+      // Track search count for Profile stats
+      try {
+        const count = parseInt(localStorage.getItem('tl-search-count') ?? '0', 10)
+        localStorage.setItem('tl-search-count', String(count + 1))
+      } catch { /* ignore */ }
+
       const r = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
