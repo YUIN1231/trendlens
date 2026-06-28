@@ -154,9 +154,6 @@ function BizRow({ b, t, saved, onToggleSave, area }: {
             <a href={mapsUrl(b)} target="_blank" rel="noopener noreferrer" className="action-link primary">
               {t('results.navigate')}
             </a>
-            {(b.status === 'rising' || b.status === 'falling') && (
-              <CopyCaption b={b} area={area} />
-            )}
             <a href={reviewUrl(b)} target="_blank" rel="noopener noreferrer" className="action-link">
               {t('results.write.review')}
             </a>
@@ -194,22 +191,6 @@ function ShareBtn({ area, category, t }: { area: string; category: string; t: (k
   return <button onClick={share} className="share-btn">{copied ? '✓ Copied' : t('share.btn')}</button>
 }
 
-function CopyCaption({ b, area }: { b: TrendBusiness; area: string }) {
-  const [copied, setCopied] = useState(false)
-  const copy = useCallback(async () => {
-    const month = new Date().toLocaleString('en', { month: 'long' })
-    const status = b.status === 'rising' ? 'blowing up' : b.status === 'falling' ? 'losing steam' : 'new'
-    const hook = b.why[0] ?? b.summary?.slice(0, 80) ?? ''
-    const caption = `I used AI to find what's ${status} in ${area} this ${month} 🔥\n\n→ ${b.name} (TrendLens Score: ${b.trendScore})\n${hook ? `\n"${hook}"\n` : ''}\nCheck it yourself: trendlens-nu.vercel.app\n\n#${area.replace(/\s/g, '')} #trendlens #${status.replace(/\s/g, '')}`
-    await navigator.clipboard.writeText(caption)
-    setCopied(true); setTimeout(() => setCopied(false), 2500)
-  }, [b, area])
-  return (
-    <button className="action-link copy-caption-btn" onClick={copy} title="Copy TikTok/Reels caption">
-      {copied ? '✓ Copied!' : '↗ Copy caption'}
-    </button>
-  )
-}
 
 function Inner() {
   const params = useSearchParams()

@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 type Dict = Record<string, string>
 
 const EN: Dict = {
-  'hero.headline': 'Find what\'s about to blow up in your city.',
-  'hero.subheadline': 'AI reads thousands of Google reviews to spot the hottest places before everyone else. Made for TikTok and Reels content.',
+  'hero.headline': 'Find what\'s trending before everyone else.',
+  'hero.subheadline': 'AI reads thousands of Google reviews to spot places getting hot — or losing steam — right now. Any city, any category, 100% free.',
   'hero.supplement': 'Search any city and category. We analyze recent review signals, rating movement, and review language to find what is changing.',
   'search.area.label': 'City or Area',
   'search.area.placeholder': 'e.g. "Tokyo" or "Melbourne CBD"',
@@ -24,7 +24,7 @@ const EN: Dict = {
   'how.step2': 'AI reads thousands of Google reviews',
   'how.step3': 'Spots what\'s getting hot or losing steam',
   'how.step4': 'See rising and falling places',
-  'how.step4.share': 'Go there first — then share it with your audience',
+  'how.step4.share': 'Go there before the crowd does',
   'sample.title': 'Example results',
   'share.btn': 'Share',
   'score.explain': 'vs last month',
@@ -43,15 +43,15 @@ const EN: Dict = {
   'results.hours.ago': 'h ago',
   'results.cached': 'cached',
   'results.no.results': 'No trend data found. Try a different area or category.',
-  'meta.tagline': 'worldwide · 100% free · made for creators',
+  'meta.tagline': 'worldwide · 100% free · updated daily',
   'back': '← back',
   'map.me': '📍 Me',
   'map.no.coords': 'No locations with map data found.',
 }
 
 const JA: Dict = {
-  'hero.headline': '今月バズる前の店を、先に見つける。',
-  'hero.subheadline': 'AIがGoogleマップのレビューを分析し、急上昇・急落下しているスポットをいち早く発見。TikTok・Reels コンテンツに最適。',
+  'hero.headline': '誰より先に、今熱い場所を見つける。',
+  'hero.subheadline': 'AIがGoogleマップの膨大なレビューを分析し、急上昇・急落下しているスポットをリアルタイムで発見。世界中どこでも、完全無料。',
   'hero.supplement': 'エリアとジャンルを入力するだけ。最新レビューの傾向、評価の変化を分析して「今変化している場所」を探し出します。',
   'search.area.label': 'エリア・都市',
   'search.area.placeholder': '例:「渋谷 東京」「大阪」「Melbourne」',
