@@ -28,6 +28,7 @@ interface HasDataReviewsResponse {
     gpsCoordinates?: { latitude: number; longitude: number }
   }
   reviews?: HasDataReview[]
+  nextPageToken?: string
 }
 
 async function geocodeArea(area: string): Promise<{ lat: number; lng: number } | null> {
@@ -81,22 +82,39 @@ export async function searchWithHasData(area: string, category: string): Promise
 
       const revBody = await revRes.json() as HasDataReviewsResponse
       const info = revBody.placeInfo ?? {}
-      const revList = revBody.reviews ?? []
 
-      for (const r of revList) {
-        const text = r.snippet ?? r.text ?? ''
-        if (!text.trim()) continue
-        reviews.push({
-          reviewText: text,
-          stars: r.rating ?? 0,
-          publishedAtDate: r.isoDate ?? undefined,
-          title: info.title ?? biz.title ?? 'Unknown',
-          address: info.address ?? biz.address ?? '',
-          totalScore: info.rating ?? biz.rating ?? 0,
-          reviewsCount: info.reviews ?? biz.reviews ?? 0,
-          lat: info.gpsCoordinates?.latitude ?? biz.gpsCoordinates?.latitude,
-          lng: info.gpsCoordinates?.longitude ?? biz.gpsCoordinates?.longitude,
-        })
+      const pushReviews = (list: HasDataReview[]) => {
+        for (const r of list) {
+          const text = r.snippet ?? r.text ?? ''
+          if (!text.trim()) continue
+          reviews.push({
+            reviewText: text,
+            stars: r.rating ?? 0,
+            publishedAtDate: r.isoDate ?? undefined,
+            title: info.title ?? biz.title ?? 'Unknown',
+            address: info.address ?? biz.address ?? '',
+            totalScore: info.rating ?? biz.rating ?? 0,
+            reviewsCount: info.reviews ?? biz.reviews ?? 0,
+            lat: info.gpsCoordinates?.latitude ?? biz.gpsCoordinates?.latitude,
+            lng: info.gpsCoordinates?.longitude ?? biz.gpsCoordinates?.longitude,
+          })
+        }
+      }
+
+      pushReviews(revBody.reviews ?? [])
+
+      // Fetch page 2 for historical reviews (better trend detection)
+      if (revBody.nextPageToken) {
+        try {
+          const rev2Res = await fetch(
+            `https://api.hasdata.com/scrape/google-maps/reviews?placeId=${placeId}&hl=en&sortBy=newestFirst&nextPageToken=${encodeURIComponent(revBody.nextPageToken)}`,
+            { headers }
+          )
+          if (rev2Res.ok) {
+            const rev2Body = await rev2Res.json() as HasDataReviewsResponse
+            pushReviews(rev2Body.reviews ?? [])
+          }
+        } catch { /* ignore page 2 failure */ }
       }
     } catch { /* skip individual business */ }
     }))
